@@ -7,6 +7,8 @@ import urllib.request
 import ssl
 import zipfile
 import shutil
+import warnings
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -28,6 +30,10 @@ def ensure_data_folder(data_folder='data', force_refresh=False):
         excel_files = list(data_path.glob('*.xlsx')) + list(data_path.glob('*.xls'))
         if excel_files:
             print(f"Found {len(excel_files)} Excel file(s) in '{data_folder}' folder.")
+            # If data folder have been created more than 6 months ago, suggest refreshing
+            folder_age = (datetime.now() - datetime.fromtimestamp(data_path.stat().st_mtime)).days
+            if folder_age > 180:
+                print(f"Note: The data folder is {folder_age} days old. Consider refreshing the data with --refresh option.")
             return True
     
     # Need to download data
@@ -121,8 +127,10 @@ def extract_alnus_data(folder_path, city_name='NICE', allergen_col=None):
     for excel_file in excel_files:
         print(f"Processing: {excel_file.name}")
         try:
-            # Read Excel file
-            df = pd.read_excel(excel_file)
+            # Read Excel file and suppress specific warnings from openpyxl about stylesheets
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=UserWarning, module=re.escape('openpyxl.styles.stylesheet'))
+                df = pd.read_excel(excel_file)
             
             # Convert allergen_col to integer if it's a column name
             if isinstance(allergen_col, str):
