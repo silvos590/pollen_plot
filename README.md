@@ -1,6 +1,6 @@
-# Allergen Data Extraction and Visualization
+# French Allergen Data Extraction and Visualization
 
-This script extracts allergen data and date values from Excel files, then creates visualizations showing allergen values over time. Supports filtering by city, selecting specific allergens, and customizing the time range.
+This script extracts allergen data and date values from Excel files provided by French governement, then creates visualizations showing allergen values over time. Supports filtering by city, selecting specific allergens, and customizing the time range.
 
 ## Features
 
@@ -184,3 +184,4 @@ python extract_alnus.py
 ## License
 
 This script is provided as-is for data analysis purposes.
+
