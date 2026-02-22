@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pollen Analysis Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar h1 i {
+            color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .form-group select:hover,
+        .form-group input:hover {
+            border-color: #667eea;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .year-inputs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .year-inputs input {
+            flex: 1;
+        }
+
+        .year-inputs span {
+            padding-top: 12px;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            display: none;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-secondary.show {
+            display: flex;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-refresh {
+            width: auto;
+            padding: 10px 15px;
+            font-size: 12px;
+            margin-top: 10px;
+            background: #f9a825;
+            color: white;
+            flex: none;
+        }
+
+        .btn-refresh:hover {
+            background: #f89c0e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(249, 168, 37, 0.3);
+        }
+
+        /* Loading popup */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-popup {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            min-width: 300px;
+        }
+
+        .spinner {
+            border: 4px solid #f0f0f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-popup h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .loading-popup p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .plot-container {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 2;
+        }
+
+        .plot-container.show {
+            display: flex;
+        }
+
+        .plot-container img {
+            flex: 1;
+            object-fit: contain;
+            max-height: calc(100% - 40px);
+        }
+
+        .plot-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Loading spinner */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 999;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+            max-width: 300px;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Leaflet customizations */
+        .leaflet-control-container {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .city-marker {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .city-marker:hover {
+            transform: scale(1.2);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .city-marker.selected {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                order: 2;
+            }
+
+            .main-content {
+                height: 60vh;
+                order: 1;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h1><i class="fas fa-leaf"></i> Pollen Analysis</h1>
+
+            <form id="filterForm">
+                <!-- City Selection -->
+                <div class="form-group">
+                    <label for="citySelect"><i class="fas fa-map-pin"></i> City</label>
+                    <select id="citySelect" required>
+                        <option value="">Select a city or click on map</option>
+                    </select>
+                </div>
+
+                <!-- Year Window -->
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Year Window</label>
+                    <div class="year-inputs">
+                        <input type="number" id="minYear" placeholder="From" min="2000" max="2100" required>
+                        <span>to</span>
+                        <input type="number" id="maxYear" placeholder="To" min="2000" max="2100" required>
+                    </div>
+                </div>
+
+                <!-- Allergen Selection -->
+                <div class="form-group">
+                    <label for="allergenSelect"><i class="fas fa-pollen"></i> Allergen</label>
+                    <select id="allergenSelect" required disabled>
+                        <option value="">Select a city first</option>
+                    </select>
+                </div>
+
+                <!-- Buttons -->
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-chart-line"></i> View Plot
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="backBtn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                </div>
+
+                <!-- Refresh Cache Button -->
+                <button type="button" class="btn btn-refresh" id="refreshBtn" title="Refresh cache from Excel files">
+                    <i class="fas fa-sync-alt"></i> Refresh Cache
+                </button>
+            </form>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div id="map"></div>
+            <div class="plot-container" id="plotContainer">
+                <div class="plot-title" id="plotTitle"></div>
+                <img id="plotImage" src="" alt="Plot">
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading plot...</p>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let map;
+        let cities = [];
+        let markers = {};
+        let yearRange = { min: 2000, max: 2026 };
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([46.5, 2.5], 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        // Load cities and create markers
+        function loadCities() {
+            $.get('/api/cities', function(data) {
+                cities = data;
+
+                cities.forEach(city => {
+                    const marker = L.marker([city.lat, city.lon], {
+                        icon: L.divIcon({
+                            className: 'city-marker',
+                            html: city.name.charAt(0),
+                            iconSize: [40, 40]
+                        })
+                    }).addTo(map)
+                        .bindPopup(`<strong>${city.name}</strong>`, { closeButton: false });
+
+                    marker.on('click', function() {
+                        selectCity(city.name, marker);
+                    });
+
+                    markers[city.name] = marker;
+                });
+
+                // Populate city dropdown
+                const citySelect = document.getElementById('citySelect');
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name;
+                    option.textContent = city.name;
+                    citySelect.appendChild(option);
+                });
+            });
+        }
+
+        // Load year range
+        function loadYearRange() {
+            $.get('/api/years', function(data) {
+                yearRange = data;
+                document.getElementById('minYear').value = yearRange.min;
+                // Commented as I have to refresh the hash
+                //document.getElementById('minYear').min = yearRange.min;
+                document.getElementById('maxYear').value = yearRange.max;
+                //document.getElementById('maxYear').max = yearRange.max;
+            });
+        }
+
+        // Select city
+        function selectCity(cityName, marker) {
+            // Update marker
+            document.querySelectorAll('.city-marker').forEach(m => {
+                m.classList.remove('selected');
+            });
+            if (marker) {
+                marker.getElement().classList.add('selected');
+            }
+
+            // Update dropdown
+            document.getElementById('citySelect').value = cityName;
+
+            // Load allergens - keep the latest selected
+            if (document.getElementById('allergenSelect').disabled || document.getElementById('allergenSelect').options.length === 0) {
+                loadAllergens(cityName);
+            }
+        }
+
+        // Load allergens for selected city
+        function loadAllergens(cityName) {
+            $.get(`/api/allergens/${cityName}`, function(data) {
+                const allergenSelect = document.getElementById('allergenSelect');
+                allergenSelect.innerHTML = '';
+
+                if (data.length === 0) {
+                    allergenSelect.innerHTML = '<option value="">No allergens found</option>';
+                    allergenSelect.disabled = true;
+                } else {
+                    allergenSelect.disabled = false;
+                    data.forEach(allergen => {
+                        const option = document.createElement('option');
+                        option.value = allergen;
+                        option.textContent = allergen;
+                        allergenSelect.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        // Handle city dropdown change
+        document.getElementById('citySelect').addEventListener('change', function(e) {
+            if (e.target.value) {
+                selectCity(e.target.value, markers[e.target.value]);
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const city = document.getElementById('citySelect').value;
+            const allergen = document.getElementById('allergenSelect').value;
+            const minYear = parseInt(document.getElementById('minYear').value);
+            const maxYear = parseInt(document.getElementById('maxYear').value);
+
+            if (!city || !allergen) {
+                showError('Please select a city and allergen');
+                return;
+            }
+
+            if (minYear > maxYear) {
+                showError('Min year must be less than max year');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+
+            // Request plot
+            $.ajax({
+                url: '/api/plot',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    city: city,
+                    allergen: allergen,
+                    min_year: minYear,
+                    max_year: maxYear
+                }),
+                success: function(response) {
+                    document.getElementById('loading').classList.remove('show');
+                    document.getElementById('plotImage').src = response.image;                    
+                    document.getElementById('plotTitle').textContent = `${allergen} in ${city} (${minYear}-${maxYear})`;
+                    
+                    // Show plot, hide map
+                    document.getElementById('map').style.display = 'none';
+                    document.getElementById('plotContainer').classList.add('show');
+                    document.getElementById('backBtn').classList.add('show');
+                },
+                error: function(error) {
+                    document.getElementById('loading').classList.remove('show');
+                    const response = JSON.parse(error.responseText);
+                    showError(response.error || 'Error generating plot');
+                }
+            });
+        });
+
+        // Handle back button
+        document.getElementById('backBtn').addEventListener('click', function() {
+            document.getElementById('map').style.display = 'block';
+            document.getElementById('plotContainer').classList.remove('show');
+            document.getElementById('backBtn').classList.remove('show');
+        });
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            initMap();
+            loadCities();
+            loadYearRange();
+        });
+
+        // Handle refresh cache button
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('show');
+
+            $.ajax({
+                url: '/api/refresh-cache',
+                type: 'POST',
+                contentType: 'application/json',
+                success: function(response) {
+                    overlay.classList.remove('show');
+                    showError(`✓ Cache refreshed! Loaded ${response.cities_count} cities`);
+                    
+                    // Reload the page after a short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                },
+                error: function(error) {
+                    overlay.classList.remove('show');
+                    const response = JSON.parse(error.responseText);
+                    showError('Error refreshing cache: ' + (response.error || 'Unknown error'));
+                }
+            });
+        });
+    </script>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-popup">
+            <div class="spinner"></div>
+            <h2>Refreshing Cache</h2>
+            <p>Loading data from Excel files...</p>
+        </div>
+    </div>
+</body>
+</html>

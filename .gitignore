@@ -1,2 +1,8 @@
 data/
 *.png
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+cache.pkl
