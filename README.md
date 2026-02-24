@@ -47,44 +47,44 @@ pip install -r requirements.txt
 
 **Basic usage (defaults to ALNUS for last 10 years):**
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE
+python pollen_plot.py "C:/path/to/files" -c NICE
 ```
 
 **Specify a different allergen by name:**
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE -a BETULA
+python pollen_plot.py "C:/path/to/files" -c NICE -a BETULA
 ```
 
 **Specify allergen by column index (0-based, column A is date):**
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE -a 6  # Column G (7th column)
+python pollen_plot.py "C:/path/to/files" -c NICE -a 6  # Column G (7th column)
 ```
 
 **Specify number of years to plot:**
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE -y 5   # Last 5 years
-python extract_alnus.py "C:/path/to/files" -c NICE --years 15  # Last 15 years
+python pollen_plot.py "C:/path/to/files" -c NICE -y 5   # Last 5 years
+python pollen_plot.py "C:/path/to/files" -c NICE --years 15  # Last 15 years
 ```
 
 **Combine multiple options:**
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE -a CORYLUS -y 3
+python pollen_plot.py "C:/path/to/files" -c NICE -a CORYLUS -y 3
 ```
 
 **Auto-detect available allergens:**
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE -a NONEXISTENT
+python pollen_plot.py "C:/path/to/files" -c NICE -a NONEXISTENT
 # Will show available allergens and suggest correct usage
 ```
 
 **Interactive mode (prompts for folder path):**
 ```bash
-python extract_alnus.py -c NICE -a ALNUS
+python pollen_plot.py -c NICE -a ALNUS
 ```
 
 **Display help:**
 ```bash
-python extract_alnus.py -h
+python pollen_plot.py -h
 ```
 
 3. The script will:
@@ -125,7 +125,7 @@ Example: `-a 2` selects column C
 
 ## Script Parameters
 
-To modify the script behavior by editing `extract_alnus.py`:
+To modify the script behavior by editing `pollen_plot.py`:
 
 - **File filter**: Change `'*NICE*'` to `'*YOUR_PATTERN*'` in line 19
 - **Column indices**: Change `[0, 6]` to select different columns (0-indexed: A=0, B=1, ... G=6)
@@ -138,7 +138,7 @@ To modify the script behavior by editing `extract_alnus.py`:
 
 **Allergen not found**: Run the script with a non-existent allergen to see available options, e.g.:
 ```bash
-python extract_alnus.py "C:/path/to/files" -c NICE -a LIST
+python pollen_plot.py "C:/path/to/files" -c NICE -a LIST
 ```
 
 **Column index out of range**: Use `-a LIST` to detect available columns, or check that your Excel files have enough columns
@@ -162,7 +162,7 @@ xlrd>=2.0.0
 
 ```bash
 # Run the script
-python extract_alnus.py
+python pollen_plot.py
 
 # Output example:
 # Found 3 Excel file(s)
